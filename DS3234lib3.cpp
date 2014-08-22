@@ -95,18 +95,18 @@ void DS3234::getLaunchParameters(long &_interval, int &_dayStart, int &_hourStar
 			}
 		 
 		 if(timeout == true) break;
-		 
-		 char logFileName[12];
-		 byte i = 0;
+		 int i = 0;
+		 char logFileName[12]="";
 		 unsigned int interval = Serial.parseInt();
 		 int dayStart = Serial.parseInt();
 		 int hourStart = Serial.parseInt();
 		 int minStart = Serial.parseInt();
 		 
-		 //Code to parse file name
-		 while((Serial.read() != '/n') && (i < 12)){
+		 
+		 while(Serial.peek()!='\n'){
 		  logFileName[i] = Serial.read();
 			i++;
+			delay(1);
 		 }
 			
 		 //  Write all parameters to EEPROM
@@ -115,9 +115,8 @@ void DS3234::getLaunchParameters(long &_interval, int &_dayStart, int &_hourStar
 		 EEPROM.write(0x03, dayStart);
 		 EEPROM.write(0x04, hourStart);
 		 EEPROM.write(0x05, minStart);
-		 
-		 for(int i = 0; i < 12; i++){
-			EEPROM.write(0x06 + i, logFileName[i]);
+		 for(int j = 0; j < 12; j++){
+			EEPROM.write((0x06 + j), logFileName[j]);
 		 }
 		 
 		 while(Serial.available() != 0){  //Clear serial buffer
