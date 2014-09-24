@@ -32,7 +32,7 @@ class DS3234
     boolean alarm2set(int date, int hour, int minute);
     byte ConvertIntToPackedBCD(int integer);
 		void getLaunchParameters(long &_interval, int &_dayStart, int &_hourStart, int &_minStart);
-		void getFileTimeStamp();
+		void parseTimeStamp();
 		int year;
 		int month;
 		int day;

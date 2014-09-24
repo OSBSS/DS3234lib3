@@ -166,6 +166,7 @@ String DS3234::timeStamp(){
 	{
 		timestamp[i] = stamp[i]-48;
 	}
+	DS3234::parseTimeStamp();
 	String StampString(stamp);
   return StampString;
   //return stamp;
@@ -173,7 +174,7 @@ String DS3234::timeStamp(){
 
   //****************************************************************
 	
-void DS3234::getFileTimeStamp(){
+void DS3234::parseTimeStamp(){
 	year = 2000+timestamp[6]*10+timestamp[7];
 	month = timestamp[0]*10+timestamp[1];
 	day = timestamp[3]*10+timestamp[4];
