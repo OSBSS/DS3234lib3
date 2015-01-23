@@ -230,7 +230,7 @@ void DS3234::secondAlarmSet(int s){
   SPDR = 0x8E;                  //Ox8E is address of DS3234 control register
   while(!(SPSR & (1<<SPIF)));
   SPDR = 0b00000101;            //Set SQW pin to interrupt functionality, enable alarm 1
-	//SPDR = 0b01000101;            //Set SQW pin to interrupt functionality, enable alarm 1, enable BBSQW
+	//SPDR = 0b01000001;            // enable alarm 1, enable BBSQW
   while(!(SPSR & (1<<SPIF)));   
   PORTB |= (1<<PORTB2);         //End transmission
   
