@@ -1,7 +1,5 @@
 // OSBSS RTC library for DS3234
-// Last updated - February 4, 2015
-
-// Enabled BBSQW - INTCN should be 1 and Alarms should be 1 as well
+// Last updated - February 13, 2015
 
 #include "DS3234lib3.h"
 #include "Arduino.h"
