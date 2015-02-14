@@ -1,3 +1,8 @@
+// OSBSS RTC library for DS3234
+// Last updated - February 4, 2015
+
+// Enabled BBSQW - INTCN should be 1 and Alarms should be 1 as well
+
 #include "DS3234lib3.h"
 #include "Arduino.h"
 #include <EEPROM.h>
@@ -15,7 +20,7 @@ byte DS3234::ConvertIntToPackedBCD(int integer){
   byte BCDL = (integer - BCDH*10);
   byte BCDP = (BCDH<<4) | BCDL;
   return BCDP;
-  }
+}
 
   //****************************************************************
   
@@ -70,7 +75,7 @@ void DS3234::fetchAndSetTime(){
     Serial.println(DS3234::timeStamp());
     delay(1000);
     }
-  }
+}
 
   //****************************************************************
 
@@ -170,7 +175,7 @@ String DS3234::timeStamp(){
 	String StampString(stamp);
   return StampString;
   //return stamp;
-  }
+}
 
   //****************************************************************
 	
@@ -185,6 +190,29 @@ void DS3234::parseTimeStamp(){
 
 	//****************************************************************
 
+void DS3234::disableAlarms(){
+  DS3234::spiInit();
+  PORTB &= ~(1<<PORTB2);        //Begin transmission
+  SPDR = 0x8E;                  //Ox8E is address of DS3234 control register
+  while(!(SPSR & (1<<SPIF)));
+  SPDR = 0b00000100;            // disable all alarms, INTCN should be kept to 1, otherwise it'll trigger interrupt
+	//SPDR = 0b01000100;            // disable all alarms, BBSQW on
+  while(!(SPSR & (1<<SPIF)));   
+  PORTB |= (1<<PORTB2);         //End transmission
+}
+	//****************************************************************
+	
+void DS3234::setNewAlarm(long _interval){
+  DS3234::spiInit();
+	DS3234::timeStamp();
+	DS3234::checkInterval(hour, minute, _interval);
+	DS3234::alarm2set(day, hour, minute);
+	DS3234::alarmFlagClear();  // clear alarm flag
+	//t=interval+t;  // t is a global variable
+	DS3234::setNextAlarm();
+}
+	//****************************************************************
+
 void DS3234::alarmFlagClear(){
   DS3234::spiInit();
   PORTB &= ~(1<<PORTB2);        //Begin transmission
@@ -193,7 +221,21 @@ void DS3234::alarmFlagClear(){
   SPDR = 0x00;                  //Clear alarm 2 flag
   while(!(SPSR & (1<<SPIF)));   
   PORTB |= (1<<PORTB2);         //End transmission
-  }
+}
+
+  //****************************************************************
+	
+	void DS3234::setTempConvRate(){
+  DS3234::spiInit();
+  PORTB &= ~(1<<PORTB2);        //Begin transmission
+  SPDR = 0x8F;                  //Ox8F is address of DS3234 control/status register
+  while(!(SPSR & (1<<SPIF)));
+  //SPDR |= 0x00;								// reset control status register - set default rate - 64 seconds
+	//SPDR |= 0b00100000;                  // set temp conversion sample rate to 256 seconds
+	SPDR |= 0b01100000;                  // set temp conversion sample rate to 512 seconds
+  while(!(SPSR & (1<<SPIF)));   
+  PORTB |= (1<<PORTB2);         //End transmission
+}
 
   //****************************************************************
 
@@ -203,13 +245,14 @@ void DS3234::spiInit(){
   SPCR = (1<<SPE) | (1<<MSTR) | (1<<SPR1) | (1<<CPOL) | (1<<CPHA); //SPI enable, in master mode, speed /128
   byte x = SPSR;  //Read SPI status register
   x = SPDR;  //Read SPI data register (sequence clears SPIF)  
-  }
+}
 
   //****************************************************************
   
 boolean DS3234::alarm2set(int date, int hours, int mins){
   DS3234::spiInit();
   int startTime[4] = {mins, hours, date, 0x06};  //Create start day & time array
+	//int startTime[4] = {mins, hours, date, 0b01000110};  //Create start day & time array
   PORTB &= ~(1<<PORTB2);                   //Open SPI connection with DS3234 (SS=Lo)
   SPDR = 0x8B;                             //Ox8B is write address of Alarm2 minutes register
   while(!(SPSR & (1<<SPIF)));              //wait for SPIF
@@ -218,7 +261,7 @@ boolean DS3234::alarm2set(int date, int hours, int mins){
     SPDR = DS3234::ConvertIntToPackedBCD(startTime[i]); //Repeatedly parse time data from serial buffer then
     while(!(SPSR & (1<<SPIF)));                      //write 0x8B to 0x8E clock register.  0x8E sets enables alarm
     byte z = SPDR;
-    }
+  }
   PORTB |= (1<<PORTB2);                     //Close SPI connection with DS3234 (SS=Hi)
 }
   
@@ -229,8 +272,8 @@ void DS3234::secondAlarmSet(int s){
   PORTB &= ~(1<<PORTB2);        //Begin transmission
   SPDR = 0x8E;                  //Ox8E is address of DS3234 control register
   while(!(SPSR & (1<<SPIF)));
-  SPDR = 0b00000101;            //Set SQW pin to interrupt functionality, enable alarm 1
-	//SPDR = 0b01000101;            //Set SQW pin to interrupt functionality, enable alarm 1, enable BBSQW
+  //SPDR = 0b00000101;            //Set SQW pin to interrupt functionality, enable alarm 1
+	SPDR = 0b01000101;            // enable alarm 1, enable INTCN, enable BBSQW
   while(!(SPSR & (1<<SPIF)));   
   PORTB |= (1<<PORTB2);         //End transmission
   
@@ -246,8 +289,9 @@ void DS3234::secondAlarmSet(int s){
     }
   
   PORTB |= (1<<PORTB2);        //Put SS high (SPI end)
-  }
+}
   
+	
 	   //****************************************************************
 		 
 void DS3234::minuteAlarmSet(int m){
@@ -255,7 +299,8 @@ void DS3234::minuteAlarmSet(int m){
   PORTB &= ~(1<<PORTB2);        //Begin transmission
   SPDR = 0x8E;                  //Ox8E is address of DS3234 control register
   while(!(SPSR & (1<<SPIF)));
-  SPDR = 0b00000110;            //Set SQW pin to interrupt functionality, enable alarm 2
+  //SPDR = 0b00000110;            //Set SQW pin to interrupt functionality, enable alarm 2
+	SPDR = 0b01000110;            //enable alarm 2, enable INTCN, enable BBSQW
   while(!(SPSR & (1<<SPIF)));   
   PORTB |= (1<<PORTB2);         //End transmission
   
@@ -271,7 +316,7 @@ void DS3234::minuteAlarmSet(int m){
     }
   
   PORTB |= (1<<PORTB2);        //Put SS high (SPI end)
-  }
+}
   
 	   //****************************************************************
 		 
@@ -280,7 +325,8 @@ void DS3234::hourAlarmSet(int m, int h){
   PORTB &= ~(1<<PORTB2);        //Begin transmission
   SPDR = 0x8E;                  //Ox8E is address of DS3234 control register
   while(!(SPSR & (1<<SPIF)));
-  SPDR = 0b00000110;            //Set SQW pin to interrupt functionality, enable alarm 2
+  //SPDR = 0b00000110;            //Set SQW pin to interrupt functionality, enable alarm 2
+	SPDR = 0b01000110;            //enable alarm 2, enable INTCN, enable BBSQW
   while(!(SPSR & (1<<SPIF)));   
   PORTB |= (1<<PORTB2);         //End transmission
   
@@ -297,7 +343,7 @@ void DS3234::hourAlarmSet(int m, int h){
     
   
   PORTB |= (1<<PORTB2);        //Put SS high (SPI end)
-  }
+}
   
 	   //****************************************************************
 
@@ -352,7 +398,7 @@ void DS3234::checkInterval(int h, int m, long intervul){
 		t=(hr*3600)+interval;
   }
   else return;
-  }
+}
   
     //****************************************************************t'was a long night
   
@@ -374,7 +420,7 @@ int DS3234::GetSeconds(){
   PORTB |= (1<<PORTB2);                     //Close SPI connection with DS3234 (SS=Hi)
 
   return seconds;
-  }
+}
 
 	 //****************************************************************
 
@@ -397,7 +443,7 @@ void DS3234::minuteAlarmBegin(){
     }
   
   PORTB |= (1<<PORTB2);        //Put SS high (SPI end)
-  }
+}
 
   //****************************************************************
   
@@ -420,7 +466,7 @@ void DS3234::secondAlarmBegin(){
     }
   
   PORTB |= (1<<PORTB2);        //Put SS high (SPI end)
-  }
+}
 
 	  //****************************************************************asm("nop");
  

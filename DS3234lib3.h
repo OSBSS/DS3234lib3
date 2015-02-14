@@ -20,7 +20,9 @@ class DS3234
     void fetchAndSetTime();   //Fetches time from computer using OSBSS processing sketch
     String timeStamp();       //
     void checkInterval(int hour, int minute, long interval);
+		void disableAlarms();
 		void alarmFlagClear();
+		void setTempConvRate();
     void spiInit();
     void minuteAlarmBegin();
 		void secondAlarmBegin();
@@ -28,6 +30,7 @@ class DS3234
 		void minuteAlarmSet(int m);
 		void hourAlarmSet(int m, int h);
 		int GetSeconds();
+		void setNewAlarm(long _interval);
 		void setNextAlarm();
     boolean alarm2set(int date, int hour, int minute);
     byte ConvertIntToPackedBCD(int integer);
