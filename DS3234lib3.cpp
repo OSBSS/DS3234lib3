@@ -230,7 +230,7 @@ void DS3234::alarmFlagClear(){
   while(!(SPSR & (1<<SPIF)));
   //SPDR |= 0x00;								// reset control status register - set default rate - 64 seconds
 	//SPDR |= 0b00100000;                  // set temp conversion sample rate to 256 seconds
-	SPDR |= 0b01100000;                  // set temp conversion sample rate to 512 seconds
+	SPDR |= 0b00110000;                  // set temp conversion sample rate to 512 seconds
   while(!(SPSR & (1<<SPIF)));   
   PORTB |= (1<<PORTB2);         //End transmission
 }
