@@ -250,7 +250,6 @@ void DS3234::spiInit(){
 boolean DS3234::alarm2set(int date, int hours, int mins){
   DS3234::spiInit();
   int startTime[4] = {mins, hours, date, 0x06};  //Create start day & time array
-	//int startTime[4] = {mins, hours, date, 0b01000110};  //Create start day & time array
   PORTB &= ~(1<<PORTB2);                   //Open SPI connection with DS3234 (SS=Lo)
   SPDR = 0x8B;                             //Ox8B is write address of Alarm2 minutes register
   while(!(SPSR & (1<<SPIF)));              //wait for SPIF
@@ -270,8 +269,8 @@ void DS3234::secondAlarmSet(int s){
   PORTB &= ~(1<<PORTB2);        //Begin transmission
   SPDR = 0x8E;                  //Ox8E is address of DS3234 control register
   while(!(SPSR & (1<<SPIF)));
-  //SPDR = 0b00000101;            //Set SQW pin to interrupt functionality, enable alarm 1
-	SPDR = 0b01000101;            // enable alarm 1, enable INTCN, enable BBSQW
+  SPDR = 0b00000101;            //Set SQW pin to interrupt functionality, enable alarm 1
+	//SPDR = 0b01000101;            // enable alarm 1, enable INTCN, enable BBSQW
   while(!(SPSR & (1<<SPIF)));   
   PORTB |= (1<<PORTB2);         //End transmission
   
@@ -297,8 +296,8 @@ void DS3234::minuteAlarmSet(int m){
   PORTB &= ~(1<<PORTB2);        //Begin transmission
   SPDR = 0x8E;                  //Ox8E is address of DS3234 control register
   while(!(SPSR & (1<<SPIF)));
-  //SPDR = 0b00000110;            //Set SQW pin to interrupt functionality, enable alarm 2
-	SPDR = 0b01000110;            //enable alarm 2, enable INTCN, enable BBSQW
+  SPDR = 0b00000110;            //Set SQW pin to interrupt functionality, enable alarm 2
+	//SPDR = 0b01000110;            //enable alarm 2, enable INTCN, enable BBSQW
   while(!(SPSR & (1<<SPIF)));   
   PORTB |= (1<<PORTB2);         //End transmission
   
@@ -323,8 +322,8 @@ void DS3234::hourAlarmSet(int m, int h){
   PORTB &= ~(1<<PORTB2);        //Begin transmission
   SPDR = 0x8E;                  //Ox8E is address of DS3234 control register
   while(!(SPSR & (1<<SPIF)));
-  //SPDR = 0b00000110;            //Set SQW pin to interrupt functionality, enable alarm 2
-	SPDR = 0b01000110;            //enable alarm 2, enable INTCN, enable BBSQW
+  SPDR = 0b00000110;            //Set SQW pin to interrupt functionality, enable alarm 2
+	//SPDR = 0b01000110;            //enable alarm 2, enable INTCN, enable BBSQW
   while(!(SPSR & (1<<SPIF)));   
   PORTB |= (1<<PORTB2);         //End transmission
   
