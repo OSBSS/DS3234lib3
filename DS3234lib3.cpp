@@ -11,6 +11,69 @@ DS3234::DS3234()
 {
 }
 
+ //****************************************************************
+
+void DS3234::checkDST(){
+  DS3234::timeStamp();  // get current date and time
+  
+  // check day of week
+  int y = year;
+  static int t[] = {0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4};
+  if(month<3)
+		y = year - 1;
+  int DOW = (y + y/4 - y/100 + y/400 + t[month-1] + day) % 7;  // Tomohiko Sakamoto's Algorithm (Usenet newsgroup, 1993)
+  
+  // start DST
+	if(month==3) // check if month is March
+	{
+		if(DOW==0 && day >= 8 && day <=14) // check if date is 2nd Sunday of March
+		{
+			if(hour==2 && minute==0 && second==0)	// check if time is 2:00 AM
+			{
+				startDST();
+			}
+		}
+	}
+  
+  // stop DST
+	if(month==11) // check if month is November
+	{
+		if(DOW==0 && day >= 1 && day <=7) // check if date is 1st Sunday of November
+		{
+			if(hour==2 && minute==0 && second==0)	// check if time is 2:00 AM
+			{
+				stopDST();
+			}
+		}
+	}
+}
+
+	//****************************************************************
+	
+void DS3234::startDST(){
+	DS3234::spiInit();
+	PORTB &= ~(1<<PORTB2);        //Begin transmission (SS=LOW)
+  SPDR = 0x82;                  //Ox82 is address of hour register
+  while(!(SPSR & (1<<SPIF)));
+  SPDR = DS3234::ConvertIntToPackedBCD(3);//change time to 3AM in 0x82 DS3234 register
+  while(!(SPSR & (1<<SPIF)));
+  PORTB |= (1<<PORTB2);        //Put SS high (SPI end)
+}
+
+	//****************************************************************
+	
+void DS3234::stopDST(){
+	DS3234::spiInit();
+	PORTB &= ~(1<<PORTB2);                      //Open SPI connection with DS3234 (SS=Lo)
+	SPDR = 0x82;                                //Ox82 is write address of hour register
+	while(!(SPSR & (1<<SPIF)));
+	byte x = SPDR;  
+	SPDR = DS3234::ConvertIntToPackedBCD(1); //change time to 1AM in 0x82 DS3234 register
+	while(!(SPSR & (1<<SPIF)));                      
+	byte z = SPDR;
+	PORTB |= (1<<PORTB2);         //Close SPI connection with DS3234 (SS=Hi)
+}
+
   //****************************************************************
 
 byte DS3234::ConvertIntToPackedBCD(int integer){
@@ -217,20 +280,7 @@ void DS3234::alarmFlagClear(){
   SPDR = 0x8F;                  //Ox8F is address of DS3234 control/status register
   while(!(SPSR & (1<<SPIF)));
   SPDR = 0x00;                  //Clear alarm 2 flag
-  while(!(SPSR & (1<<SPIF)));   
-  PORTB |= (1<<PORTB2);         //End transmission
-}
-
-  //****************************************************************
-	
-	void DS3234::setTempConvRate(){
-  DS3234::spiInit();
-  PORTB &= ~(1<<PORTB2);        //Begin transmission
-  SPDR = 0x8F;                  //Ox8F is address of DS3234 control/status register
-  while(!(SPSR & (1<<SPIF)));
-  //SPDR |= 0x00;								// reset control status register - set default rate - 64 seconds
-	//SPDR |= 0b00100000;                  // set temp conversion sample rate to 256 seconds
-	SPDR |= 0b00110000;                  // set temp conversion sample rate to 512 seconds
+	//SPDR &= 0xFC;										//Clear alarm flags ONLY
   while(!(SPSR & (1<<SPIF)));   
   PORTB |= (1<<PORTB2);         //End transmission
 }
