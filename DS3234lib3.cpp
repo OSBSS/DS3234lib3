@@ -1,5 +1,5 @@
-// OSBSS RTC library for DS3234
-// Last updated - February 13, 2015
+// OSBSS library for DS3234 RTC
+// Last updated - March 12, 2015
 
 #include "DS3234lib3.h"
 #include "Arduino.h"
