@@ -24,6 +24,8 @@ void DS3234::checkDST(){
   int DOW = (y + y/4 - y/100 + y/400 + t[month-1] + day) % 7;  // Tomohiko Sakamoto's Algorithm (Usenet newsgroup, 1993)
   
   // start DST
+  if(EEPROM.read(0x01)==0)	// check status of DST; 0 -> started, 1 -> stopped
+  {
 	if(month==3) // check if month is March
 	{
 		if(DOW==0 && day >= 8 && day <=14) // check if date is 2nd Sunday of March
@@ -34,8 +36,10 @@ void DS3234::checkDST(){
 			}
 		}
 	}
-  
+  }
   // stop DST
+  if(EEPROM.read(0x01)==1)	// check status of DST; 0 -> started, 1 -> stopped
+  {
 	if(month==11) // check if month is November
 	{
 		if(DOW==0 && day >= 1 && day <=7) // check if date is 1st Sunday of November
@@ -46,6 +50,7 @@ void DS3234::checkDST(){
 			}
 		}
 	}
+  }
 }
 
 	//****************************************************************
@@ -58,6 +63,7 @@ void DS3234::startDST(){
   SPDR = DS3234::ConvertIntToPackedBCD(3);//change time to 3AM in 0x82 DS3234 register
   while(!(SPSR & (1<<SPIF)));
   PORTB |= (1<<PORTB2);        //Put SS high (SPI end)
+  EEPROM.write(0x01, 1);  // write 1 to EEPROM to indicate DST start
 }
 
 	//****************************************************************
@@ -72,6 +78,7 @@ void DS3234::stopDST(){
 	while(!(SPSR & (1<<SPIF)));                      
 	byte z = SPDR;
 	PORTB |= (1<<PORTB2);         //Close SPI connection with DS3234 (SS=Hi)
+	EEPROM.write(0x01, 0);	// write 0 to EEPROM to indicate DST end
 }
 
   //****************************************************************
